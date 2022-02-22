@@ -1,0 +1,60 @@
+services:
+  proxy:
+    build:
+      context: ./nginx
+    ports:
+      - '8081:80'
+    networks:
+      - backend-network
+      - frontend-network
+  redis-server:
+    image: 'redis'
+    networks:
+      - redis-server-network
+  backend:
+    restart: on-failure
+    build:
+      context: ./backend
+    ports:
+      - '8080:8080'
+    container_name: api-server
+    networks:
+      - backend-network
+      - postgres-network
+      - redis-server-network
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - '3000:3000'
+    stdin_open: true
+    volumes:
+      - ./frontend:/app
+    networks:
+      - backend-network
+      - frontend-network
+  postgres:
+    image: postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./database/init-database.sql:/docker-entrypoint-initdb.d/init-database.sql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    networks:
+      - postgres-network
+
+
+networks:
+  frontend-network:
+    driver: bridge
+  backend-network:
+    driver: bridge
+  postgres-network:
+    driver: bridge
+  redis-server-network:
+    driver: bridge
+
+
+volumes:
+  postgres:
